@@ -50,7 +50,32 @@ pub struct TensorType {
 }
 
 impl From<onnx_ir::ir::ArgType> for TensorType {
-    
+    fn from(value: onnx_ir::ir::ArgType) -> Self {
+        match value {
+            ArgType::Scalar(t) => {
+                Self {
+                    shape: Vec::new(),
+                    dtype: t.into()
+                }
+            }, 
+            ArgType::Tensor(t) => {
+                let shape: Vec<usize>;
+                if let Some(static_shape) = t.static_shape {
+                    shape = static_shape.clone();
+                } else {
+                    //shape = Vec::with_capacity(t.rank)
+                    panic!("Only static shapes are supported currently")
+                }
+                Self {
+                    shape: shape,
+                    dtype: t.elem_type.into()
+                }
+            },
+            ArgType::Shape(t) => {
+                panic!("Cannot construct a shape tensor currently")
+            }
+        }
+    }
 }
 
 impl TensorType {
@@ -70,22 +95,6 @@ pub struct Tensor {
     pub consumers: Vec<NodeId>
 }
 
-impl Tensor {
-    fn from_onnx_arg(value: onnx_ir::ir::Argument) -> Self {
-        match value.ty {
-            ArgType::Scalar(t) => {
-                let dtype: DType = t.into();
-                Tensor {
-                    id: TensorId::new(),
-                    ty: TensorType {
-                        shape: Vec::new(),
-                        dtype: dtype
-                    }
-                }
-            }
-        }
-    }
-}
 
 #[derive(Clone, Debug)]
 pub enum OpKind {
