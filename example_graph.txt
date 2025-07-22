@@ -1,0 +1,188 @@
+Graph {
+    nodes: {
+        NodeId(
+            fdf3a01f-02fb-48cf-b292-66bac79b0be4,
+        ): Node {
+            id: NodeId(
+                fdf3a01f-02fb-48cf-b292-66bac79b0be4,
+            ),
+            op: Relu,
+            inputs: [
+                TensorId(
+                    b90129fb-7ec2-4a54-a086-c48820da6871,
+                ),
+            ],
+            outputs: [
+                TensorId(
+                    4c74b1eb-b556-4d94-a892-ba1abcb6ed3f,
+                ),
+            ],
+            name: Some(
+                "relu1",
+            ),
+        },
+        NodeId(
+            799ef429-12a7-4396-98d7-c740842bcc3f,
+        ): Node {
+            id: NodeId(
+                799ef429-12a7-4396-98d7-c740842bcc3f,
+            ),
+            op: Linear,
+            inputs: [
+                TensorId(
+                    f35c77c5-281f-4d99-bf33-1bbd9d47aedc,
+                ),
+                TensorId(
+                    b420309d-f841-4b33-a04d-cae1032d5f0c,
+                ),
+                TensorId(
+                    8efbff91-8562-4ee4-8d7c-de6234ea7d88,
+                ),
+            ],
+            outputs: [
+                TensorId(
+                    b90129fb-7ec2-4a54-a086-c48820da6871,
+                ),
+            ],
+            name: Some(
+                "matmul1",
+            ),
+        },
+    },
+    tensors: {
+        TensorId(
+            4c74b1eb-b556-4d94-a892-ba1abcb6ed3f,
+        ): Tensor {
+            id: TensorId(
+                4c74b1eb-b556-4d94-a892-ba1abcb6ed3f,
+            ),
+            ty: TensorType {
+                shape: [
+                    None,
+                    None,
+                ],
+                dtype: F32,
+            },
+            name: Some(
+                "relu1_out1",
+            ),
+            produce: Some(
+                NodeId(
+                    fdf3a01f-02fb-48cf-b292-66bac79b0be4,
+                ),
+            ),
+            consumers: [],
+        },
+        TensorId(
+            8efbff91-8562-4ee4-8d7c-de6234ea7d88,
+        ): Tensor {
+            id: TensorId(
+                8efbff91-8562-4ee4-8d7c-de6234ea7d88,
+            ),
+            ty: TensorType {
+                shape: [
+                    Some(
+                        10,
+                    ),
+                ],
+                dtype: F32,
+            },
+            name: Some(
+                "B",
+            ),
+            produce: None,
+            consumers: [
+                NodeId(
+                    799ef429-12a7-4396-98d7-c740842bcc3f,
+                ),
+            ],
+        },
+        TensorId(
+            b90129fb-7ec2-4a54-a086-c48820da6871,
+        ): Tensor {
+            id: TensorId(
+                b90129fb-7ec2-4a54-a086-c48820da6871,
+            ),
+            ty: TensorType {
+                shape: [
+                    None,
+                    None,
+                ],
+                dtype: F32,
+            },
+            name: Some(
+                "matmul1_out1",
+            ),
+            produce: Some(
+                NodeId(
+                    799ef429-12a7-4396-98d7-c740842bcc3f,
+                ),
+            ),
+            consumers: [
+                NodeId(
+                    fdf3a01f-02fb-48cf-b292-66bac79b0be4,
+                ),
+            ],
+        },
+        TensorId(
+            f35c77c5-281f-4d99-bf33-1bbd9d47aedc,
+        ): Tensor {
+            id: TensorId(
+                f35c77c5-281f-4d99-bf33-1bbd9d47aedc,
+            ),
+            ty: TensorType {
+                shape: [
+                    None,
+                    None,
+                ],
+                dtype: F32,
+            },
+            name: Some(
+                "input1",
+            ),
+            produce: None,
+            consumers: [
+                NodeId(
+                    799ef429-12a7-4396-98d7-c740842bcc3f,
+                ),
+            ],
+        },
+        TensorId(
+            b420309d-f841-4b33-a04d-cae1032d5f0c,
+        ): Tensor {
+            id: TensorId(
+                b420309d-f841-4b33-a04d-cae1032d5f0c,
+            ),
+            ty: TensorType {
+                shape: [
+                    Some(
+                        5,
+                    ),
+                    Some(
+                        10,
+                    ),
+                ],
+                dtype: F32,
+            },
+            name: Some(
+                "A",
+            ),
+            produce: None,
+            consumers: [
+                NodeId(
+                    799ef429-12a7-4396-98d7-c740842bcc3f,
+                ),
+            ],
+        },
+    },
+    inputs: [
+        TensorId(
+            f35c77c5-281f-4d99-bf33-1bbd9d47aedc,
+        ),
+    ],
+    outputs: [
+        TensorId(
+            4c74b1eb-b556-4d94-a892-ba1abcb6ed3f,
+        ),
+    ],
+}

@@ -45,7 +45,7 @@ impl From<ElementType> for DType {
 
 #[derive(Clone, Debug)]
 pub struct TensorType {
-    pub shape: Vec<usize>,
+    pub shape: Vec<Option<usize>>,
     pub dtype: DType
 }
 
@@ -59,19 +59,23 @@ impl From<onnx_ir::ir::ArgType> for TensorType {
                 }
             }, 
             ArgType::Tensor(t) => {
-                let shape: Vec<usize>;
+                let shape: Vec<Option<usize>>;
                 if let Some(static_shape) = t.static_shape {
-                    shape = static_shape.clone();
+                    shape = static_shape
+                        .clone()
+                        .iter()
+                        .map(|x| Some(*x))
+                        .collect();
                 } else {
-                    //shape = Vec::with_capacity(t.rank)
-                    panic!("Only static shapes are supported currently")
+                    shape = vec![None; t.rank];
+                    //panic!("Only static shapes are supported currently, {:?}", t.rank)
                 }
                 Self {
                     shape: shape,
                     dtype: t.elem_type.into()
                 }
             },
-            ArgType::Shape(t) => {
+            ArgType::Shape(_) => {
                 panic!("Cannot construct a shape tensor currently")
             }
         }
@@ -100,7 +104,8 @@ pub struct Tensor {
 pub enum OpKind {
     Relu,
     Add,
-    MatMul
+    MatMul,
+    Linear // MatMul followed by Add
 }
 
 impl From<onnx_ir::ir::NodeType> for OpKind {
@@ -110,7 +115,8 @@ impl From<onnx_ir::ir::NodeType> for OpKind {
             NodeType::Relu => OpKind::Relu,
             NodeType::Add => OpKind::Add,
             NodeType::MatMul => OpKind::MatMul,
-            _ => panic!("Unsupported node type")
+            NodeType::Linear => OpKind::Linear,
+            _ => panic!("Unsupported node type: {:?}", value)
         }
     }
 }
@@ -143,23 +149,93 @@ impl Graph {
         let mut tensor_name_to_id: HashMap<String, TensorId> = HashMap::new();
 
         // Convert tensors
-        let mut node_prod_id = None;
-        let mut node_cons_id = None;
+        //et mut node_prod_id = None;
+        //et mut node_cons_id = None;
         for n in &onnx_graph.nodes {
             let node_id = NodeId::new();
-            let node_op: OpKind = n.node_type.into();
+            let node_op: OpKind = n.node_type.clone().into();
             let mut inputs = vec![];
             let mut outputs = vec![];
-            for arg in n.inputs {
+            for arg in &n.inputs {
                 if let Some(input_id) = tensor_name_to_id.get(&arg.name) {
-                    //let tensor = tensors.get(input_id).unwrap().clone();
-                    inputs.push(input_id.clone())
+                    inputs.push(input_id.clone());
+                    let tensor = tensors.get_mut(&input_id).unwrap();
+                    tensor.consumers.push(node_id.clone());
                 } else {
                     let input_id = TensorId::new();
-
+                    let tensor = Tensor {
+                        id: input_id,
+                        ty: arg.ty.clone().into(),
+                        name: Some(arg.name.clone()),
+                        produce: None,
+                        consumers: vec![node_id.clone()]
+                    };
+                    tensors.insert(input_id.clone(), tensor);
+                    tensor_name_to_id.insert(arg.name.clone(), input_id);
+                    inputs.push(input_id);
                 }
             }
+
+            for arg in &n.outputs {
+                if let Some(output_id) = tensor_name_to_id.get(&arg.name) {
+                    panic!("Cycle detected");
+                    //outputs.push(output_id.clone());
+                    //let tensor = tensors.get_mut(&output_id).unwrap();
+                    //if let Some(_) = tensor.produce {
+                    //    panic!("Tensor {:?} cannot have two producers", tensor)
+                    //} else {
+                    //    tensor.produce = Some(node_id.clone());
+                    //}
+                } else {
+                    let output_id = TensorId::new();
+                    let tensor = Tensor {
+                        id: output_id,
+                        ty: arg.ty.clone().into(),
+                        name: Some(arg.name.clone()),
+                        produce: Some(node_id.clone()),
+                        consumers: vec![]
+                    };
+                    tensors.insert(output_id.clone(), tensor);
+                    tensor_name_to_id.insert(arg.name.clone(), output_id);
+                    outputs.push(output_id);
+                }
+            }
+            let node = Node {
+                id: node_id.clone(),
+                op: node_op,
+                inputs,
+                outputs,
+                name: Some(n.name.clone())
+            };
+            nodes.insert(node_id, node);
+        }
+        let inputs = onnx_graph.inputs.iter()
+            .filter_map(|a| tensor_name_to_id.get(&a.name).copied())
+            .collect();
+        
+        let outputs = onnx_graph.outputs.iter()
+            .filter_map(|a| tensor_name_to_id.get(&a.name).copied())
+            .collect();
+
+        Graph {
+            nodes,
+            tensors,
+            inputs,
+            outputs
         }
     }
 }
 
+#[cfg(test)]
+mod tests {
+
+    use std::{path::PathBuf, str::FromStr};
+
+    use super::*;
+
+    #[test]
+    fn test_working() {
+        let graph = Graph::from_onnx_file(&PathBuf::from_str("./simple_model.onnx").unwrap());
+        println!("{:#?}", graph);
+    }
+}
